@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis Tareas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --coral: #ff6b6b;
+    --teal: #22b8a4;
+    --teal-dark: #1a9c8b;
+    --bg1: #ffe8d6;
+    --bg2: #d8e8ff;
+    --card: #ffffff;
+    --text: #2d2d3a;
+    --text-light: #8b8b9a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Poppins', sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    color: var(--text);
+  }
+
+  .app {
+    width: 100%;
+    max-width: 520px;
+    background: var(--card);
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(45, 45, 58, 0.15);
+    padding: 32px;
+  }
+
+  header { text-align: center; margin-bottom: 24px; }
+
+  header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  header p {
+    color: var(--text-light);
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  .filter-box {
+    position: relative;
+    margin-bottom: 16px;
+  }
+
+  .filter-box input {
+    width: 100%;
+    padding: 12px 16px 12px 40px;
+    border: 2px solid #eee;
+    border-radius: 14px;
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .filter-box input:focus { border-color: var(--teal); }
+
+  .filter-box::before {
+    content: "🔍";
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    opacity: 0.5;
+  }
+
+  .add-form {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .add-form input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #eee;
+    border-radius: 14px;
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .add-form input:focus { border-color: var(--coral); }
+
+  .add-form button {
+    background: var(--coral);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 0 22px;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s;
+  }
+
+  .add-form button:hover { background: #ff5252; transform: translateY(-1px); }
+
+  .task-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #faf9fb;
+    border-radius: 14px;
+    padding: 12px 14px;
+    transition: background 0.2s;
+  }
+
+  .task-item:hover { background: #f2f0f5; }
+
+  .checkbox {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--teal);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+
+  .checkbox.checked { background: var(--teal); }
+  .checkbox.checked::after { content: "✓"; color: white; font-size: 13px; font-weight: 700; }
+
+  .task-title {
+    flex: 1;
+    font-size: 14.5px;
+    outline: none;
+    word-break: break-word;
+  }
+
+  .task-item.completed .task-title {
+    text-decoration: line-through;
+    color: var(--text-light);
+  }
+
+  .task-actions {
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .task-item:hover .task-actions { opacity: 1; }
+
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    padding: 4px 6px;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+
+  .icon-btn:hover { background: #e8e6ee; }
+
+  .empty-state {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 14px;
+    padding: 32px 0;
+  }
+
+  .counter {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-light);
+    margin-top: 18px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <h1>✅ Mis Tareas</h1>
+    <p>Organiza tu día, una tarea a la vez</p>
+  </header>
+
+  <div class="filter-box">
+    <input type="text" id="filterInput" placeholder="Buscar tarea...">
+  </div>
+
+  <form class="add-form" id="addForm">
+    <input type="text" id="newTaskInput" placeholder="Nueva tarea..." autocomplete="off">
+    <button type="submit">Agregar</button>
+  </form>
+
+  <ul class="task-list" id="taskList"></ul>
+
+  <div class="counter" id="counter"></div>
+</div>
+
+<script>
+  const API_BASE = "/api";
+  let allTasks = [];
+
+  const taskList = document.getElementById("taskList");
+  const filterInput = document.getElementById("filterInput");
+  const addForm = document.getElementById("addForm");
+  const newTaskInput = document.getElementById("newTaskInput");
+  const counter = document.getElementById("counter");
+
+  async function loadTasks() {
+    const res = await fetch(`${API_BASE}/tasks`);
+    allTasks = await res.json();
+    renderTasks();
+  }
+
+  function renderTasks() {
+    const filterText = filterInput.value.trim().toLowerCase();
+    const filtered = allTasks.filter(t => t.title.toLowerCase().includes(filterText));
+
+    taskList.innerHTML = "";
+
+    if (filtered.length === 0) {
+      taskList.innerHTML = `<div class="empty-state">No hay tareas para mostrar</div>`;
+    }
+
+    filtered.forEach(task => {
+      const li = document.createElement("li");
+      li.className = "task-item" + (task.completed ? " completed" : "");
+
+      li.innerHTML = `
+        <div class="checkbox ${task.completed ? "checked" : ""}" data-id="${task.id}"></div>
+        <div class="task-title" contenteditable="true" data-id="${task.id}">${escapeHtml(task.title)}</div>
+        <div class="task-actions">
+          <button class="icon-btn delete-btn" data-id="${task.id}">🗑️</button>
+        </div>
+      `;
+      taskList.appendChild(li);
+    });
+
+    counter.textContent = `${allTasks.filter(t => !t.completed).length} pendiente(s) de ${allTasks.length} tarea(s)`;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  addForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const title = newTaskInput.value.trim();
+    if (!title) return;
+
+    await fetch(`${API_BASE}/tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title })
+    });
+
+    newTaskInput.value = "";
+    loadTasks();
+  });
+
+  filterInput.addEventListener("input", renderTasks);
+
+  taskList.addEventListener("click", async (e) => {
+    if (e.target.classList.contains("checkbox")) {
+      const id = e.target.dataset.id;
+      const task = allTasks.find(t => t.id == id);
+      await fetch(`${API_BASE}/tasks/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: !task.completed })
+      });
+      loadTasks();
+    }
+
+    if (e.target.classList.contains("delete-btn")) {
+      const id = e.target.dataset.id;
+      await fetch(`${API_BASE}/tasks/${id}`, { method: "DELETE" });
+      loadTasks();
+    }
+  });
+
+  // Edición del título: se guarda al perder el foco o presionar Enter
+  taskList.addEventListener("blur", async (e) => {
+    if (e.target.classList.contains("task-title")) {
+      const id = e.target.dataset.id;
+      const newTitle = e.target.textContent.trim();
+      if (!newTitle) return;
+      await fetch(`${API_BASE}/tasks/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle })
+      });
+    }
+  }, true);
+
+  taskList.addEventListener("keydown", (e) => {
+    if (e.target.classList.contains("task-title") && e.key === "Enter") {
+      e.preventDefault();
+      e.target.blur();
+    }
+  });
+
+  loadTasks();
+</script>
+
+</body>
+</html>
