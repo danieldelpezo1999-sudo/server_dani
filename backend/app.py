@@ -1,8 +1,8 @@
 import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import psycopg2
-import psycopg2.extras
+import psycopg
+from psycopg.rows import dict_row
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,12 +12,13 @@ CORS(app)
 
 
 def get_connection():
-    return psycopg2.connect(
+    return psycopg.connect(
         host=os.getenv("DB_HOST", "localhost"),
         dbname=os.getenv("DB_NAME", "bd_server"),
         user=os.getenv("DB_USER", "daniel_user"),
         password=os.getenv("DB_PASSWORD", ""),
         port=os.getenv("DB_PORT", "5432"),
+        row_factory=dict_row,
     )
 
 
@@ -26,7 +27,7 @@ def get_connection():
 def get_tasks():
     query_text = request.args.get("q", "").strip()
     conn = get_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur = conn.cursor()
     if query_text:
         cur.execute(
             "SELECT * FROM tasks WHERE title ILIKE %s ORDER BY created_at DESC",
@@ -49,7 +50,7 @@ def add_task():
         return jsonify({"error": "El título no puede estar vacío"}), 400
 
     conn = get_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur = conn.cursor()
     cur.execute(
         "INSERT INTO tasks (title) VALUES (%s) RETURNING *",
         (title,),
@@ -66,7 +67,7 @@ def add_task():
 def update_task(task_id):
     data = request.get_json()
     conn = get_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur = conn.cursor()
 
     cur.execute("SELECT * FROM tasks WHERE id = %s", (task_id,))
     existing = cur.fetchone()
