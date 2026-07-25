@@ -104,6 +104,12 @@
 
   .add-form input:focus { border-color: var(--coral); }
 
+  .add-form input[type="date"] {
+    flex: 0 0 130px;
+    color: var(--text-light);
+    font-size: 13px;
+  }
+
   .add-form button {
     background: var(--coral);
     color: white;
@@ -201,8 +207,8 @@
 
 <div class="app">
   <header>
-    <h1> Mis Tareas</h1>
-    <p>Organiza tu día, una tarea a la vez todo funciona</p>
+    <h1>✅ Mis Tareas</h1>
+    <p>Organiza tu día, una tarea a la vez</p>
   </header>
 
   <div class="filter-box">
@@ -211,6 +217,7 @@
 
   <form class="add-form" id="addForm">
     <input type="text" id="newTaskInput" placeholder="Nueva tarea..." autocomplete="off">
+    <input type="date" id="newTaskDate" title="Fecha límite (opcional)">
     <button type="submit">Agregar</button>
   </form>
 
@@ -251,7 +258,10 @@
 
       li.innerHTML = `
         <div class="checkbox ${task.completed ? "checked" : ""}" data-id="${task.id}"></div>
-        <div class="task-title" contenteditable="true" data-id="${task.id}">${escapeHtml(task.title)}</div>
+        <div style="flex:1;">
+          <div class="task-title" contenteditable="true" data-id="${task.id}">${escapeHtml(task.title)}</div>
+          ${task.fecha_limite ? `<div style="font-size:11px;color:var(--text-light);margin-top:2px;">📅 ${task.fecha_limite}</div>` : ""}
+        </div>
         <div class="task-actions">
           <button class="icon-btn delete-btn" data-id="${task.id}">🗑️</button>
         </div>
@@ -271,15 +281,17 @@
   addForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const title = newTaskInput.value.trim();
+    const fecha_limite = document.getElementById("newTaskDate").value || null;
     if (!title) return;
 
     await fetch(`${API_BASE}/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title })
+      body: JSON.stringify({ title, fecha_limite })
     });
 
     newTaskInput.value = "";
+    document.getElementById("newTaskDate").value = "";
     loadTasks();
   });
 

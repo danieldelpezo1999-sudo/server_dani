@@ -46,14 +46,15 @@ def get_tasks():
 def add_task():
     data = request.get_json()
     title = data.get("title", "").strip()
+    fecha_limite = data.get("fecha_limite")  # opcional, puede venir vacío
     if not title:
         return jsonify({"error": "El título no puede estar vacío"}), 400
 
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO tasks (title) VALUES (%s) RETURNING *",
-        (title,),
+        "INSERT INTO tasks (title, fecha_limite) VALUES (%s, %s) RETURNING *",
+        (title, fecha_limite),
     )
     new_task = cur.fetchone()
     conn.commit()
@@ -78,10 +79,11 @@ def update_task(task_id):
 
     title = data.get("title", existing["title"])
     completed = data.get("completed", existing["completed"])
+    fecha_limite = data.get("fecha_limite", existing.get("fecha_limite"))
 
     cur.execute(
-        "UPDATE tasks SET title = %s, completed = %s WHERE id = %s RETURNING *",
-        (title, completed, task_id),
+        "UPDATE tasks SET title = %s, completed = %s, fecha_limite = %s WHERE id = %s RETURNING *",
+        (title, completed, fecha_limite, task_id),
     )
     updated_task = cur.fetchone()
     conn.commit()
