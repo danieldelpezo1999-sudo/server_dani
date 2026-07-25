@@ -14,7 +14,7 @@ jobs:
       - name: Copiar archivos al VPS (rsync por SSH)
         uses: burnett01/rsync-deployments@7.0.1
         with:
-          switches: -avz --delete --exclude=".git*" --exclude=".github"
+          switches: -avz --delete --exclude=".git*" --exclude=".github" --exclude="backend/.env" --exclude="venv"
           path: ./
           remote_path: /home/${{ secrets.VPS_USER }}/server_dani/
           remote_host: ${{ secrets.VPS_HOST }}
