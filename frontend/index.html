@@ -123,7 +123,7 @@
     transition: transform 0.15s, background 0.2s;
   }
 
-  .add-form button:hover { background: #ff5252; transform: translateY(-1px); }
+  .add-form button:hover { background: #843fa1; transform: translateY(-1px); }
 
   .task-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
 
@@ -201,13 +201,68 @@
     color: var(--text-light);
     margin-top: 18px;
   }
+
+  /* --- Modo edición --- */
+  .edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .edit-form .edit-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .edit-form input[type="text"] {
+    flex: 1;
+    padding: 8px 10px;
+    border: 2px solid var(--teal);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+  }
+
+  .edit-form input[type="date"] {
+    flex: 0 0 130px;
+    padding: 8px 10px;
+    border: 2px solid #eee;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--text-light);
+    outline: none;
+  }
+
+  .edit-form .edit-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .edit-form .edit-buttons button {
+    border: none;
+    border-radius: 10px;
+    padding: 6px 14px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .save-btn { background: var(--teal); color: white; }
+  .save-btn:hover { background: var(--teal-dark); }
+  .cancel-btn { background: #eee; color: var(--text); }
+  .cancel-btn:hover { background: #e0e0e0; }
 </style>
 </head>
 <body>
 
 <div class="app">
   <header>
-    <h1>ADMINISTRA TU DIA con DANIEL DEL PEZO</h1>
+    <h1>ADMINISTRA TU DIA</h1>
     <p>Organiza tu día, una tarea a la vez</p>
   </header>
 
@@ -229,6 +284,7 @@
 <script>
   const API_BASE = "/api";
   let allTasks = [];
+  let editingId = null; // id de la tarea actualmente en modo edición
 
   const taskList = document.getElementById("taskList");
   const filterInput = document.getElementById("filterInput");
@@ -256,26 +312,57 @@
       const li = document.createElement("li");
       li.className = "task-item" + (task.completed ? " completed" : "");
 
-      li.innerHTML = `
-        <div class="checkbox ${task.completed ? "checked" : ""}" data-id="${task.id}"></div>
-        <div style="flex:1;">
-          <div class="task-title" contenteditable="true" data-id="${task.id}">${escapeHtml(task.title)}</div>
-          ${task.fecha_limite ? `<div style="font-size:11px;color:var(--text-light);margin-top:2px;">📅 ${task.fecha_limite}</div>` : ""}
-        </div>
-        <div class="task-actions">
-          <button class="icon-btn delete-btn" data-id="${task.id}">🗑️</button>
-        </div>
-      `;
+      if (editingId === task.id) {
+        // --- Modo edición: formulario con título y fecha ---
+        li.innerHTML = `
+          <div class="edit-form">
+            <div class="edit-row">
+              <input type="text" class="edit-title-input" data-id="${task.id}" value="${escapeAttr(task.title)}">
+              <input type="date" class="edit-date-input" data-id="${task.id}" value="${task.fecha_limite || ""}">
+            </div>
+            <div class="edit-buttons">
+              <button type="button" class="cancel-btn" data-id="${task.id}">Cancelar</button>
+              <button type="button" class="save-btn" data-id="${task.id}">Guardar</button>
+            </div>
+          </div>
+        `;
+      } else {
+        // --- Modo normal ---
+        li.innerHTML = `
+          <div class="checkbox ${task.completed ? "checked" : ""}" data-id="${task.id}"></div>
+          <div style="flex:1;">
+            <div class="task-title" data-id="${task.id}">${escapeHtml(task.title)}</div>
+            ${task.fecha_limite ? `<div style="font-size:11px;color:var(--text-light);margin-top:2px;">📅 ${task.fecha_limite}</div>` : ""}
+          </div>
+          <div class="task-actions">
+            <button class="icon-btn edit-btn" data-id="${task.id}">✏️</button>
+            <button class="icon-btn delete-btn" data-id="${task.id}">🗑️</button>
+          </div>
+        `;
+      }
       taskList.appendChild(li);
     });
 
     counter.textContent = `${allTasks.filter(t => !t.completed).length} pendiente(s) de ${allTasks.length} tarea(s)`;
+
+    // Si estamos en modo edición, enfocar el input del título automáticamente
+    if (editingId !== null) {
+      const input = taskList.querySelector(`.edit-title-input[data-id="${editingId}"]`);
+      if (input) {
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
+    }
   }
 
   function escapeHtml(str) {
     const div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  function escapeAttr(str) {
+    return String(str).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
   }
 
   addForm.addEventListener("submit", async (e) => {
@@ -297,9 +384,29 @@
 
   filterInput.addEventListener("input", renderTasks);
 
+  async function saveEdit(id) {
+    const titleInput = taskList.querySelector(`.edit-title-input[data-id="${id}"]`);
+    const dateInput = taskList.querySelector(`.edit-date-input[data-id="${id}"]`);
+    const newTitle = titleInput.value.trim();
+    if (!newTitle) return; // no guardar títulos vacíos
+
+    await fetch(`${API_BASE}/tasks/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: newTitle,
+        fecha_limite: dateInput.value || null
+      })
+    });
+
+    editingId = null;
+    loadTasks();
+  }
+
   taskList.addEventListener("click", async (e) => {
+    const id = e.target.dataset.id ? Number(e.target.dataset.id) : null;
+
     if (e.target.classList.contains("checkbox")) {
-      const id = e.target.dataset.id;
       const task = allTasks.find(t => t.id == id);
       await fetch(`${API_BASE}/tasks/${id}`, {
         method: "PUT",
@@ -310,30 +417,38 @@
     }
 
     if (e.target.classList.contains("delete-btn")) {
-      const id = e.target.dataset.id;
       await fetch(`${API_BASE}/tasks/${id}`, { method: "DELETE" });
+      if (editingId === id) editingId = null;
       loadTasks();
+    }
+
+    if (e.target.classList.contains("edit-btn")) {
+      editingId = id;
+      renderTasks();
+    }
+
+    if (e.target.classList.contains("cancel-btn")) {
+      editingId = null;
+      renderTasks();
+    }
+
+    if (e.target.classList.contains("save-btn")) {
+      saveEdit(id);
     }
   });
 
-  // Edición del título: se guarda al perder el foco o presionar Enter
-  taskList.addEventListener("blur", async (e) => {
-    if (e.target.classList.contains("task-title")) {
-      const id = e.target.dataset.id;
-      const newTitle = e.target.textContent.trim();
-      if (!newTitle) return;
-      await fetch(`${API_BASE}/tasks/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newTitle })
-      });
-    }
-  }, true);
-
+  // Guardar con Enter dentro del formulario de edición, cancelar con Escape
   taskList.addEventListener("keydown", (e) => {
-    if (e.target.classList.contains("task-title") && e.key === "Enter") {
-      e.preventDefault();
-      e.target.blur();
+    if (e.target.classList.contains("edit-title-input")) {
+      const id = Number(e.target.dataset.id);
+      if (e.key === "Enter") {
+        e.preventDefault();
+        saveEdit(id);
+      }
+      if (e.key === "Escape") {
+        editingId = null;
+        renderTasks();
+      }
     }
   });
 
